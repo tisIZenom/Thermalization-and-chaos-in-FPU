@@ -4,40 +4,39 @@ from CreateChain import create_chain
 import numpy as np
 
 # create a chain here and have it function as the main idea
-#
+# Mass is constant and is set to 1 for all the members so that the transformation matrix is easier to make
 
 
 class springsystem:
-    def __init__(self, members, neighbours, mass, alpha, beta) -> None:
-        self.members = int(members)
+    def __init__(self, members, neighbours, alpha, beta) -> None:
+        self.members = members
         self.neighbours = neighbours
-        self.mass = mass
         self.alpha = alpha
         self.beta = beta
 
-        # Calculate the momentum from the displacements
-        #
-        self.x = np.zeros(self.members)
-
-        # intializing random positions of the system.
-
-        self.x = np.random.randn(self.members, 1)
+        # make the postions random in the start then let the langevin dynamics or the motecarlo fix them
+        # The momentum will also be fixed by the thermalizer
+        self.displacement = np.zeros(len(self.members))
 
         # trying to force hard boundary conditions.
 
-        for i in range(self.members):
-            self.x[i] = np.random.random()
+        self.displacement[0] = 0
+        self.displacement[len(self.members) - 1] = 0
 
-        self.x[0] = 0
-        self.x[self.members - 1] = 0
+        self.momentum = np.random.randn(len(self.members))
 
-        # This data type should have the momentum also attached to it. just in case. Keep them zero?
-        #
+        # Need a method to adjust the postions of the system by a small delta
 
-        pass
+    def trial_move(self, i, epsilon):
 
+        delta = np.random.uniform(-epsilon, epsilon)
 
-positions, neighbours = create_chain(20)
+        old_config = self.displacement[i].copy()
 
-system = springsystem(len(positions), neighbours, 1, 0.1, 0.1)
-print(system.x)
+        new_config = old_config + delta
+
+        self.displacement[i] = new_config
+
+        return old_config
+
+    pass
