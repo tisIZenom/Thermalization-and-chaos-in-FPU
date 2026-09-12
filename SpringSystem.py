@@ -39,4 +39,12 @@ class springsystem:
 
         return old_config
 
+    def perturbation_kick(self, target, epsilon):
+
+        self.momentum[target] += epsilon
+
+    def perturbation_drift(self, target, epsilon):
+
+        self.momentum[target] += epsilon
+
     pass

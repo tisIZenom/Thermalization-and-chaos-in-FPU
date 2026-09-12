@@ -41,12 +41,12 @@ def Langevin(system, total_time, dt, gamma, Temperature):
             )
 
             # position update
-            system.displacement[j] = system.momentum[j] * dt
+            system.displacement[j] += system.momentum[j] * dt
 
-            # make sure that the end points dont update:
-            system.displacement[0] = 0
-            system.momentum[0] = 0
-            system.displacement[-1] = 0
-            system.momentum[-1] = 0
+        # make sure that the end points dont update:
+        system.displacement[0] = 0
+        system.momentum[0] = 0
+        system.displacement[-1] = 0
+        system.momentum[-1] = 0
 
     return system, kinetic_energy, potential_energy, total_energy

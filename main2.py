@@ -11,6 +11,11 @@ members, neighbours = create_chain(108)
 
 system = springsystem(members, neighbours, 0, 1)
 
-system, kinetic, potential, total = BAOAB(system, 10, 1, 0.0001, 0.5)
+system, kinetic, potential, total = BAOAB(system, 10, 10, 0.0001, 0.5)
+
+print("temperature of the system is 10")
+
 
 print(np.mean(kinetic))
+plt.plot(kinetic)
+plt.show()

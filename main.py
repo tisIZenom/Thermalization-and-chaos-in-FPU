@@ -10,14 +10,14 @@ from montecarlo import metropolis
 import numpy as np
 import matplotlib.pyplot as plt
 
-members, neighbours = create_chain(108)
+members, neighbours = create_chain(100)
 
-system_langevin = springsystem(members, neighbours, 0, 1)
-system_montecarlo = springsystem(members, neighbours, 0, 1)
+system_langevin = springsystem(members, neighbours, 0, 0.0)
+system_montecarlo = springsystem(members, neighbours, 0, 0.0)
 
 
 system_langevin, kinetic_averageL, potential_averageL, total_energyL = Langevin(
-    system_langevin, 1000, 0.01, 0.5, 1
+    system_langevin, 1000, 0.01, 0.7, 10
 )
 
 print("temperature of the system is 1")
@@ -25,7 +25,7 @@ print("temperature of the system is 1")
 print("now moving onto the monte carlo method")
 
 system_montecarlo, kinetic_average, potential_average, total_energy = metropolis(
-    system_montecarlo, 1, 10000
+    system_montecarlo, 10, 10000
 )
 
 
@@ -87,6 +87,29 @@ print(np.mean(total_energy))
 
 
 ## Also plotting the gaussian of the system.
+
+p = system_langevin.momentum[1:-1]
+
+fig, ax = plt.subplots(figsize=(9, 6))
+
+ax.hist(p, bins=100, density=True, alpha=0.7, label="Monte Carlo")
+
+p_theory = np.linspace(-12, 12, 500)
+
+gaussian = 1 / np.sqrt(2 * np.pi * 10) * np.exp(-(p_theory**2) / (2 * 10))
+
+ax.plot(p_theory, gaussian, linewidth=2, label=r"Theory: $T=10$")
+
+ax.set_xlabel(r"Momentum $p$")
+ax.set_ylabel(r"$P(p)$")
+ax.set_title("Momentum Distribution")
+
+ax.legend()
+ax.grid(alpha=0.25)
+
+plt.tight_layout()
+plt.show()
+
 
 p = system_montecarlo.momentum[1:-1]
 

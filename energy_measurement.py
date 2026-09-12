@@ -4,8 +4,9 @@ import numpy as np
 
 
 def energy(system):
-    q = system.displacement
-    p = system.momentum
+    N = len(system.members)
+    q = system.displacement[1 : N - 1]
+    p = system.momentum[1 : N - 1]
 
     kinetic = 0.5 * np.sum(p**2)
 
