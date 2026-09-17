@@ -4,12 +4,12 @@
 
 import copy
 import numpy as np
-from Thermalization.Frustrated_Spins.Extra_code.montecarlo_graph import energy
 from Velocity_verlet import velver
 from SpringSystem import springsystem
+from momentum_statistics import momentum_check
 
 
-def benetin(system, M, dt, epsilon, tau):
+def benetin(system, M, dt, epsilon, tau, temperature):
 
     original = copy.deepcopy(system)
     perturbed = copy.deepcopy(system)
@@ -24,7 +24,7 @@ def benetin(system, M, dt, epsilon, tau):
         perturbed.perturbation_drift(target, epsilon)
         perturbed.perturbation_kick(target, epsilon)
 
-    lyapcount = 0.0
+    lyapcount = np.zeros(M)
 
     for interval in range(M):
         delq = np.zeros(len(perturbed.members))
@@ -37,6 +37,10 @@ def benetin(system, M, dt, epsilon, tau):
 
         # evolving system B
         perturbed_evolving, kinp, potp, totp = velver(perturbed, tau, dt)
+
+        kineticmean.append(np.mean(kinp))
+        potentialmean.append(np.mean(potp))
+        totalmean.append(np.mean(totp))
 
         # finding the difference
 
@@ -52,21 +56,31 @@ def benetin(system, M, dt, epsilon, tau):
         #
         delt[interval] = np.sqrt(delcounter)
 
-        lyapcount += np.log(delt[interval] / epsilon)
+        lyapcount[interval] = np.log(delt[interval] / epsilon)
+
+        delta = delt[interval]
 
         # reset values for the next iteration
         for i in range(len(perturbed.members)):
-            perturbed.momentum[i] = perturbed.momentum[i] - epsilon * (
-                original_evolving.momentum[i] - perturbed_evolving.momentum[i]
-            ) / np.abs(original_evolving.momentum[i] - perturbed_evolving.momentum[i])
-
-            perturbed.displacement[i] = perturbed.displacement[i] + epsilon * (
-                original_evolving.displacement[i] - perturbed_evolving.displacement[i]
-            ) / np.abs(
-                original_evolving.displacement[i] - perturbed_evolving.displacement[i]
+            perturbed.displacement[i] = (
+                original_evolving.displacement[i] + scale * delq[i]
             )
+
+            perturbed.momentum[i] = original_evolving.momentum[i] + scale * delp[i]
+
         original = copy.deepcopy(original_evolving)
 
-        # this gives us del
+        # Make sure the system remains thermal while we do this
 
-    return (lyapcount / (M * tau)), delt
+        if interval % 100 == 0:
+            statistics_org, p_value_org, meanorg, varorg = momentum_check(
+                original_evolving, temperature
+            )
+            statistics_per, p_value_per, meanper, varper = momentum_check(
+                perturbed, temperature
+            )
+
+            if p_value_org or p_value_per <= 0.7:
+                print("system lost thermalization", interval)
+
+    return lyapcount, delt, kineticmean, potentialmean, totalmean

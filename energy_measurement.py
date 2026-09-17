@@ -18,10 +18,22 @@ def energy(system):
         potential += 0.5 * (r**2)
         potential += (system.beta / 4) * (r**4)
 
-    total = kinetic + potential
+    total = (kinetic + potential) / len(q)
 
     momentum_average = (2 * kinetic) / len(q)
 
     potential_average = potential / len(q)
+
+    # Need to make a per site energy measuring devise.
+    #
+    # energy per site :
+    Energy_per_site = np.zeros(len(q))
+
+    for i in range(len(q) - 1):
+        Energy_per_site[i] = (
+            0.5 * (p[i] ** 2)
+            + 0.5 * ((q[i + 1] - q[i]) ** 2)
+            + system.beta * 0.25 * ((q[i + 1] - q[i]) ** 4)
+        )
 
     return momentum_average, potential_average, total

@@ -3,15 +3,8 @@
 #
 import copy
 import numpy as np
-from velocity_verlet import velver
+from velocity_verlet_thermalized import velver
 from SpringSystem import springsystem
-
-
-class lyapunov:
-    def __init__(self, dt, positions) -> None:
-        self.dt = dt
-        self.positions = positions
-        pass
 
 
 def benetin(system, target, M, dt, epsilon, tau, temperature):
@@ -37,17 +30,43 @@ def benetin(system, target, M, dt, epsilon, tau, temperature):
             kin,
             pot,
             tot,
+            normalized,
+            temperaturedistance,
+            statistic,
+            pvalue,
+            corr_mom,
+            corr_kin,
+            corr_mode,
+            thermalized,
         ) = velver(original, tau, dt, temperature)
 
         # making system B
 
         # evolving system B
-        perturbed_evolving, kinp, potp, totp = velver(perturbed, tau, dt, temperature)
+        (
+            perturbed_evolving,
+            kinp,
+            potp,
+            totp,
+            normalizedp,
+            temperaturedistancep,
+            statisticp,
+            pvaluep,
+            corr_momp,
+            corr_kinp,
+            corr_modep,
+            thermalizedp,
+        ) = velver(perturbed, tau, dt, temperature)
 
         kineticmean[interval] = np.mean(kinp)
         potentialmean[interval] = np.mean(potp)
         totalmean[interval] = np.mean(totp)
 
+        if not thermalized:
+            print("Original system went out of thermlization: ", interval)
+
+        if not thermalizedp:
+            print("The perturbed system went out of thermlization: ", interval)
         # finding the difference
         delq = (
             perturbed_evolving.displacement[target]

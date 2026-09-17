@@ -4,20 +4,24 @@ from CreateChain import create_chain
 from LangevinDynamcis import Langevin
 from SpringSystem import springsystem
 from potential_differentiated import potential_dif
-from montecarlo import metropolis
+from montecarlo_momentum import metropolis
 
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-members, neighbours = create_chain(100)
+members, neighbours = create_chain(500)
 
-system_langevin = springsystem(members, neighbours, 0, 0.0)
-system_montecarlo = springsystem(members, neighbours, 0, 0.0)
+system_langevin = springsystem(members, neighbours, 0, 0.8)
+system_montecarlo = springsystem(members, neighbours, 0, 0.8)
 
+system_langevin.perturbation_drift(20, 1)
+system_montecarlo.perturbation_drift(target=20, epsilon=1)
+print(system_langevin.energy_per_site())
+print(system_montecarlo.energy_per_site())
 
 system_langevin, kinetic_averageL, potential_averageL, total_energyL = Langevin(
-    system_langevin, 1000, 0.01, 0.7, 10
+    system_langevin, 100, 0.01, 0.7, 10
 )
 
 print("temperature of the system is 1")

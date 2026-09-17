@@ -5,6 +5,7 @@
 from potential_differentiated import potential_dif
 import numpy as np
 from energy_measurement import energy
+from momentum_statistics import momentum_check
 
 
 def Langevin(system, total_time, dt, gamma, Temperature):
@@ -16,6 +17,8 @@ def Langevin(system, total_time, dt, gamma, Temperature):
     total_energy = np.zeros(time_step)
     kinetic_energy = np.zeros(time_step)
     potential_energy = np.zeros(time_step)
+
+    thermal_counter = 0
 
     # first the noise:
 
@@ -48,5 +51,16 @@ def Langevin(system, total_time, dt, gamma, Temperature):
         system.momentum[0] = 0
         system.displacement[-1] = 0
         system.momentum[-1] = 0
+
+        # Check the momentum distribution and report whether the system remains gaussian.
+        #
+        if i % 100 == 0:
+            statistic, p_value, mean, variance = momentum_check(system, Temperature)
+
+            if p_value >= 0.7:
+                thermal_counter += 1
+
+        if thermal_counter >= 200:
+            print("momentum is gaussian")
 
     return system, kinetic_energy, potential_energy, total_energy

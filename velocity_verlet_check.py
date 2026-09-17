@@ -197,3 +197,41 @@ print("\nMonte Carlo → Verlet:")
 print("Initial energy:", totalm[0])
 print("Final energy:", totalm[-1])
 print("Maximum |E(t)-E(0)|:", np.max(np.abs(energy_error_M)))
+
+
+# ============================================================
+# Theoretical Gaussian momentum distribution
+# ============================================================
+
+# Theoretical distribution for m = 1:
+#
+# P(p) = 1/sqrt(2*pi*T) * exp(-p^2/(2*T))
+
+p_theory = np.linspace(-5 * np.sqrt(temperature), 5 * np.sqrt(temperature), 500)
+
+gaussian = (
+    1 / np.sqrt(2 * np.pi * temperature) * np.exp(-(p_theory**2) / (2 * temperature))
+)
+
+
+# ============================================================
+# Langevin momentum distribution
+# ============================================================
+
+p = system_langevin.momentum[1:-1]
+
+fig, ax = plt.subplots(figsize=(9, 6))
+
+ax.hist(p, bins=50, density=True, alpha=0.7, label="Langevin")
+
+ax.plot(p_theory, gaussian, linewidth=2, label=rf"Theory: $T={temperature}$")
+
+ax.set_xlabel(r"Momentum $p$")
+ax.set_ylabel(r"$P(p)$")
+ax.set_title("Langevin Momentum Distribution")
+
+ax.legend()
+ax.grid(alpha=0.25)
+
+plt.tight_layout()
+plt.show()
