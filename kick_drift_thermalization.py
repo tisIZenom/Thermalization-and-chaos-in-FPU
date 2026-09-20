@@ -1,8 +1,19 @@
+import os
+
+# ---------------------------------------------------------
+# Limit numerical libraries to ONE thread per process
+# ---------------------------------------------------------
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["BLIS_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+
 import numpy as np
 import matplotlib.pyplot as plt
 from multiprocessing import Pool
 import pickle
-
 
 from SpringSystem import springsystem
 from CreateChain import create_chain
@@ -15,12 +26,12 @@ from Langevin_thermalized import Langevin
 
 N = 500
 
-NUMBER_OF_ENSEMBLES = 50
-NUMBER_OF_WORKERS = 10
+NUMBER_OF_ENSEMBLES = 10
+NUMBER_OF_WORKERS = 5
 
 temperature = 1.0
 
-total_time = 20
+total_time = 10
 dt = 0.01
 gamma = 0.7
 
@@ -88,33 +99,62 @@ def run_ensemble(args):
 
 
 def average_ensembles(results):
-    """
-    Average each observable over all ensembles.
 
-    results is a list containing the output of Langevin()
-    from every realization.
-    """
+    kinetic = np.stack([r[1] for r in results], axis=0)
 
-    # Number of quantities returned by Langevin
-    number_of_quantities = len(results[0])
+    potential = np.stack([r[2] for r in results], axis=0)
 
-    averaged = []
+    total = np.stack([r[3] for r in results], axis=0)
 
-    for quantity in range(number_of_quantities):
-        data = [np.asarray(result[quantity]) for result in results]
+    spectral = np.stack([r[4] for r in results], axis=0)
 
-        # Stack along ensemble axis
-        data = np.stack(data, axis=0)
+    temp_diff = np.stack([r[5] for r in results], axis=0)
 
-        # Average over ensemble axis
-        mean = np.mean(data, axis=0)
+    statistic = np.stack([r[6] for r in results], axis=0)
 
-        # Standard error of the mean
-        sem = np.std(data, axis=0, ddof=1) / np.sqrt(len(data))
+    p_value = np.stack([r[7] for r in results], axis=0)
 
-        averaged.append((mean, sem))
+    momentum_corr = np.stack([r[8] for r in results], axis=0)
 
-    return averaged
+    kinetic_corr = np.stack([r[9] for r in results], axis=0)
+
+    mode_corr = np.stack([r[10] for r in results], axis=0)
+
+    # -----------------------------------------------------
+    # Ensemble mean
+    # -----------------------------------------------------
+
+    means = {
+        "kinetic": np.mean(kinetic, axis=0),
+        "potential": np.mean(potential, axis=0),
+        "total": np.mean(total, axis=0),
+        "spectral": np.mean(spectral, axis=0),
+        "temp_diff": np.mean(temp_diff, axis=0),
+        "statistic": np.mean(statistic, axis=0),
+        "p_value": np.mean(p_value, axis=0),
+        "momentum_corr": np.mean(momentum_corr, axis=0),
+        "kinetic_corr": np.mean(kinetic_corr, axis=0),
+        "mode_corr": np.mean(mode_corr, axis=0),
+    }
+
+    # -----------------------------------------------------
+    # Standard error
+    # -----------------------------------------------------
+
+    sem = {
+        "kinetic": np.std(kinetic, axis=0, ddof=1) / np.sqrt(len(results)),
+        "potential": np.std(potential, axis=0, ddof=1) / np.sqrt(len(results)),
+        "total": np.std(total, axis=0, ddof=1) / np.sqrt(len(results)),
+        "spectral": np.std(spectral, axis=0, ddof=1) / np.sqrt(len(results)),
+        "temp_diff": np.std(temp_diff, axis=0, ddof=1) / np.sqrt(len(results)),
+        "statistic": np.std(statistic, axis=0, ddof=1) / np.sqrt(len(results)),
+        "p_value": np.std(p_value, axis=0, ddof=1) / np.sqrt(len(results)),
+        "momentum_corr": np.std(momentum_corr, axis=0, ddof=1) / np.sqrt(len(results)),
+        "kinetic_corr": np.std(kinetic_corr, axis=0, ddof=1) / np.sqrt(len(results)),
+        "mode_corr": np.std(mode_corr, axis=0, ddof=1) / np.sqrt(len(results)),
+    }
+
+    return means, sem
 
 
 # =========================================================
@@ -122,52 +162,62 @@ def average_ensembles(results):
 # =========================================================
 
 
-def plot_comparison(avg_set1, avg_set2):
+def plot_comparison(mean_set1, sem_set1, mean_set2, sem_set2):
 
-    names = [
-        "Kinetic Energy",
-        "Potential Energy",
-        "Total Energy",
-        "Normalized Spectral Entropy",
-        "Temperature Difference",
-        "Statistic",
-        "KS p-value",
-        "Momentum Correlator",
-        "Kinetic Correlator",
-        "Mode Correlator",
+    quantities = [
+        ("kinetic", "Kinetic Energy"),
+        ("potential", "Potential Energy"),
+        ("total", "Total Energy"),
+        ("spectral", "Normalized Spectral Entropy"),
+        ("temp_diff", "Temperature Difference"),
+        ("statistic", "KS Statistic"),
+        ("p_value", "KS p-value"),
+        ("momentum_corr", "Momentum Correlator"),
+        ("kinetic_corr", "Kinetic Correlator"),
+        ("mode_corr", "Mode Correlator"),
     ]
 
-    # -----------------------------------------------------
-    # Plot each observable separately
-    # -----------------------------------------------------
+    for key, title in quantities:
+        mean1 = mean_set1[key]
+        error1 = sem_set1[key]
 
-    for i, name in enumerate(names):
-        mean1, sem1 = avg_set1[i]
-        mean2, sem2 = avg_set2[i]
+        mean2 = mean_set2[key]
+        error2 = sem_set2[key]
+
+        # -------------------------------------------------
+        # x-axis
+        # -------------------------------------------------
+
+        x1 = np.arange(len(mean1)) * dt
+        x2 = np.arange(len(mean2)) * dt
+
+        # -------------------------------------------------
+        # Plot
+        # -------------------------------------------------
 
         plt.figure(figsize=(9, 5))
 
-        x1 = np.arange(len(mean1))
-        x2 = np.arange(len(mean2))
+        plt.plot(x1, mean1, label="Set 1: Drift")
 
-        plt.plot(x1, mean1, label="Set 1: perturbation drift")
+        plt.plot(x2, mean2, label="Set 2: Kick")
 
-        plt.plot(x2, mean2, label="Set 2: perturbation kick")
+        # -------------------------------------------------
+        # SEM
+        # -------------------------------------------------
 
-        # Optional uncertainty bands
-        plt.fill_between(x1, mean1 - sem1, mean1 + sem1, alpha=0.2)
+        plt.fill_between(x1, mean1 - error1, mean1 + error1, alpha=0.2)
 
-        plt.fill_between(x2, mean2 - sem2, mean2 + sem2, alpha=0.2)
+        plt.fill_between(x2, mean2 - error2, mean2 + error2, alpha=0.2)
 
-        plt.xlabel("Time / Lag")
-        plt.ylabel(name)
+        plt.xlabel("Time")
+        plt.ylabel(title)
 
-        plt.title(
-            f"Ensemble averaged {name}\n{NUMBER_OF_ENSEMBLES} realizations per set"
-        )
+        plt.title(f"{title}\n{NUMBER_OF_ENSEMBLES} ensembles per set")
 
         plt.legend()
+
         plt.grid(alpha=0.3)
+
         plt.tight_layout()
 
         plt.show()
@@ -247,7 +297,13 @@ if __name__ == "__main__":
     # -----------------------------------------------------
     # Plot comparison
     # -----------------------------------------------------
+    print("\nCalculating ensemble averages...")
 
-    plot_comparison(avg_set1, avg_set2)
+    mean_set1, sem_set1 = average_ensembles(results_set1)
+    mean_set2, sem_set2 = average_ensembles(results_set2)
+
+    print("Averaging complete.")
+
+    plot_comparison(mean_set1, sem_set1, mean_set2, sem_set2)
 
     print("\nSimulation finished.")

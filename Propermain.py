@@ -12,7 +12,7 @@ from Langevin_thermalized import Langevin
 
 members, neighbours = create_chain(500)
 
-system = springsystem(members, neighbours, 0, 0.8)
+system = springsystem(members, neighbours, 0, 1)
 
 
 # ---------------------------------------------------------
@@ -33,7 +33,7 @@ system = springsystem(members, neighbours, 0, 0.8)
     correlator_mode,
 ) = Langevin(
     system,
-    100,  # total time
+    10,  # total time
     0.01,  # dt
     0.7,  # gamma
     10,  # temperature

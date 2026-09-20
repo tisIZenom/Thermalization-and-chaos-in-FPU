@@ -99,8 +99,5 @@ def Thermalized_or_not(system, Temperature):
 
     else:
         Thermalized = False
-        print("Normalized spectral_entropy = ", normalized)
-        print("Temperature_distance = ", Temperature_distance)
-        print("gaussian deviattion, Statistic, p_value", statisitc, p_value)
 
     return normalized, Temperature_distance, statisitc, p_value, Thermalized

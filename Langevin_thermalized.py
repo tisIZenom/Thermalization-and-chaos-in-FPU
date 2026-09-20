@@ -58,9 +58,6 @@ def Langevin(system, total_time, dt, gamma, Temperature):
             thermalized,
         ) = Thermalized_or_not(system, Temperature)
 
-        if thermalized:
-            print("System has thermalized at time: ", i)
-
         ## Ends here Langevin starts from here
 
         force = potential_dif(system)

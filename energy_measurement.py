@@ -18,7 +18,7 @@ def energy(system):
         potential += 0.5 * (r**2)
         potential += (system.beta / 4) * (r**4)
 
-    total = (kinetic + potential) / len(q)
+    total = kinetic + potential
 
     momentum_average = (2 * kinetic) / len(q)
 

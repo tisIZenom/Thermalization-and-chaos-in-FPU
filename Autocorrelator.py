@@ -110,14 +110,26 @@ class OnlineAutocorrelation:
         return self.autocorrelation(self.kinetic_history)
 
     def mode_energy_correlation(self):
-        """
-        Calculate autocorrelation of potential energy.
-        """
-
-        if len(self.mode_history) < 2:
+        if len(self.momentum_history) < 2:
             return None
 
-        return self.autocorrelation(self.mode_history)
+        data = np.asarray(self.momentum_history)
+
+        # data shape = (time, particles)
+
+        C_total = np.zeros(len(data))
+
+        for i in range(self.N):
+            p = data[:, i]
+
+            C = self.autocorrelation(p)
+
+            if C is not None:
+                C_total += C
+
+        C_total /= self.N
+
+        return C_total
 
     def momentum_correlation_at_lag(self, lag):
 

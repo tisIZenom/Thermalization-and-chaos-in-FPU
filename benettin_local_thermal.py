@@ -1,13 +1,9 @@
-## the way we extract the lyapunov exponent in this case is by using the
-# benetin algorithm
-#
 import copy
 import numpy as np
 from velocity_verlet_thermalized import velver
-from SpringSystem import springsystem
 
 
-def benetin(system, target, M, dt, epsilon, tau, temperature):
+def benettin(system, target, M, dt, epsilon, tau, temperature):
 
     original = copy.deepcopy(system)
     perturbed = copy.deepcopy(system)
@@ -17,77 +13,91 @@ def benetin(system, target, M, dt, epsilon, tau, temperature):
     totalmean = np.zeros(M)
 
     delt = np.zeros(M)
+    local_lyap = np.zeros(M)
 
-    perturbed.perturbation_drift(target, epsilon)
-    perturbed.perturbation_kick(target, epsilon)
+    # --------------------------------------------------
+    # Create initial perturbation
+    # --------------------------------------------------
+
+    N = len(system.members)
+
+    dq = np.zeros(N)
+    dp = np.zeros(N)
+
+    dq[target] = 1.0
+    dp[target] = 1.0
+
+    norm = np.sqrt(np.sum(dq**2) + np.sum(dp**2))
+
+    dq *= epsilon / norm
+    dp *= epsilon / norm
+
+    perturbed.displacement[target] += dq[target]
+    perturbed.momentum[target] += dp[target]
 
     lyapcount = 0.0
 
+    # --------------------------------------------------
+    # Benettin loop
+    # --------------------------------------------------
+
     for interval in range(M):
-        # system A evolving
-        (
-            original_evolving,
-            kin,
-            pot,
-            tot,
-            normalized,
-            temperaturedistance,
-            statistic,
-            pvalue,
-            corr_mom,
-            corr_kin,
-            corr_mode,
-            thermalized,
-        ) = velver(original, tau, dt, temperature)
+        # Evolve both trajectories
+        original_evolving, kin, pot, tot, *_, thermalized = velver(
+            original, tau, dt, temperature
+        )
 
-        # making system B
+        perturbed_evolving, kinp, potp, totp, *_, thermalizedp = velver(
+            perturbed, tau, dt, temperature
+        )
 
-        # evolving system B
-        (
-            perturbed_evolving,
-            kinp,
-            potp,
-            totp,
-            normalizedp,
-            temperaturedistancep,
-            statisticp,
-            pvaluep,
-            corr_momp,
-            corr_kinp,
-            corr_modep,
-            thermalizedp,
-        ) = velver(perturbed, tau, dt, temperature)
+        if not thermalized or thermalizedp:
+            print("system went out of thermalization", interval)
 
+        # --------------------------------------------------
+        # Calculate full phase-space separation
+        # --------------------------------------------------
+
+        dq = perturbed_evolving.displacement - original_evolving.displacement
+
+        dp = perturbed_evolving.momentum - original_evolving.momentum
+
+        delta = np.sqrt(np.sum(dq**2) + np.sum(dp**2))
+
+        delt[interval] = delta
+
+        # --------------------------------------------------
+        # Local/finite-time Lyapunov exponent
+        # --------------------------------------------------
+
+        local_lyap[interval] = np.log(delta / epsilon) / tau
+
+        lyapcount += np.log(delta / epsilon)
+
+        # --------------------------------------------------
+        # Renormalize perturbation
+        # --------------------------------------------------
+
+        dq *= epsilon / delta
+        dp *= epsilon / delta
+
+        perturbed = copy.deepcopy(original_evolving)
+
+        perturbed.displacement += dq
+        perturbed.momentum += dp
+
+        # Original trajectory continues normally
+        original = copy.deepcopy(original_evolving)
+
+        # Diagnostics
         kineticmean[interval] = np.mean(kinp)
         potentialmean[interval] = np.mean(potp)
         totalmean[interval] = np.mean(totp)
 
-        if not thermalized:
-            print("Original system went out of thermlization: ", interval)
+    # --------------------------------------------------
+    # Global maximal Lyapunov exponent
+    # --------------------------------------------------
 
-        if not thermalizedp:
-            print("The perturbed system went out of thermlization: ", interval)
-        # finding the difference
-        delq = (
-            perturbed_evolving.displacement[target]
-            - original_evolving.displacement[target]
-        )
-        delp = perturbed_evolving.momentum[target] - original_evolving.momentum[target]
+    lambda_max = lyapcount / (M * tau)
 
-        delt[interval] = np.sqrt(delq**2 + delp**2)
-        lyapcount += np.log(np.sqrt(delq**2 + delp**2) / epsilon)
-
-        # reset values for the next iteration
-        for i in range(len(perturbed.members)):
-            perturbed.momentum[i] = perturbed.momentum[i] + epsilon * (
-                perturbed.momentum[i] - perturbed_evolving.momentum[i]
-            ) / (perturbed.momentum[i] - perturbed_evolving.momentum[i])
-
-            perturbed.displacement[i] = perturbed.displacement[i] + epsilon * (
-                perturbed.displacement[i] - perturbed_evolving.displacement[i]
-            ) / (perturbed.displacement[i] - perturbed_evolving.displacement[i])
-        original = copy.deepcopy(original_evolving)
-
-        # this gives us del
-
-    return (lyapcount / (M * tau)), delt, kineticmean, potentialmean, totalmean
+    return (lambda_max, local_lyap, delt, kineticmean, potentialmean, totalmean)

@@ -39,6 +39,21 @@ class springsystem:
 
         return Energy_per_site
 
+    def total_energy(self):
+        kinetic = 0.5 * np.sum(self.momentum**2)
+        q = self.displacement
+        potential = 0.0
+
+        for i in range(len(q) - 1):
+            r = q[i + 1] - q[i]
+
+            potential += 0.5 * (r**2)
+            potential += (self.beta / 4) * (r**4)
+
+        total = kinetic + potential
+
+        return total
+
         # Need a method to adjust the postions of the system by a small delta
 
     def trial_move(self, i, epsilon):
