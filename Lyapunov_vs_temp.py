@@ -44,7 +44,7 @@ from Langevin_thermalized import Langevin
 N = 500
 
 alpha = 0
-beta = 1
+beta = 100
 
 
 # ------------------------------------------------------------
@@ -172,7 +172,7 @@ for i, temperature in enumerate(temperatures):
         # ====================================================
 
         (lambda_max, local_lyap, delt, kineticmean, potentialmean, totalmean) = (
-            benettin(system, target, num_steps, dt, epsilon, 1)
+            benettin(system, target, num_steps, dt, epsilon, 0.5)
         )
 
         # ====================================================

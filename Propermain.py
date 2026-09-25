@@ -33,7 +33,7 @@ system = springsystem(members, neighbours, 0, 1)
     correlator_mode,
 ) = Langevin(
     system,
-    10,  # total time
+    50,  # total time
     0.01,  # dt
     0.7,  # gamma
     10,  # temperature

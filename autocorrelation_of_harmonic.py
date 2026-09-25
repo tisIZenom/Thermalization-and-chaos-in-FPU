@@ -9,9 +9,9 @@ import matplotlib.pyplot as plt
 
 members, neighbours = create_chain(500)
 
-system = springsystem(members, neighbours, 0, 0)
+system = springsystem(members, neighbours, 0, 1)
 
-system, *_ = Langevin(system, 20, 0.01, 1, 10)
+system, *_ = Langevin(system, 10, 0.01, 1, 10)
 
 (
     system,
@@ -36,7 +36,7 @@ system, *_ = Langevin(system, 20, 0.01, 1, 10)
 # ---------------------------------------------------------
 
 dt = 0.01
-total_time = 20
+total_time = 10
 
 # Construct time axis
 n = len(kinetic_average)

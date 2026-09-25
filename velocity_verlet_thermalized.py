@@ -6,7 +6,7 @@ from energy_measurement import energy
 from potential_differentiated import potential_dif
 from measure_thermalization import Thermalized_or_not
 from measure_thermalization import Normal_modes
-from Autocorrelator import OnlineAutocorrelation
+from Autocorrelator_fixed import OnlineAutocorrelation
 
 
 def velver(system, total_time, dt, temperature):
@@ -40,11 +40,12 @@ def velver(system, total_time, dt, temperature):
 
         AC.update(system.momentum, kinetic_energy_AC, Mode_energy)
 
-        if step % 10 == 0:
-            Corr_mom[step] = AC.momentum_correlation_at_lag(100)
+        if step % 100 == 0:
+            print("time: ", step)
+        Corr_mom[step] = AC.momentum_correlation_at_lag(100)
 
-            Corr_kin[step] = AC.kinetic_correlation_at_lag(100)
-            Corr_mode[step] = AC.mode_correlation_at_lag(100)
+        Corr_kin[step] = AC.kinetic_correlation_at_lag(100)
+        Corr_mode[step] = AC.mode_correlation_at_lag(100)
 
         # Check if thermalized
         (

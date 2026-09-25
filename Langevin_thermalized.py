@@ -7,7 +7,7 @@ import numpy as np
 from energy_measurement import energy
 from momentum_statistics import momentum_check
 from measure_thermalization import Normal_modes
-from Autocorrelator import OnlineAutocorrelation
+from Autocorrelator_fixed import OnlineAutocorrelation
 
 
 def Langevin(system, total_time, dt, gamma, Temperature):
@@ -35,6 +35,8 @@ def Langevin(system, total_time, dt, gamma, Temperature):
     AC = OnlineAutocorrelation(1000, N)
 
     for i in range(time_step):
+        if i % 100 == 0:
+            print("time: ", i)
         # Calculate the kinetic_energy of the system Autocorrelator stuff
         #
         kinetic_energy_AC = 0.5 * np.sum(system.momentum**2)
@@ -43,11 +45,10 @@ def Langevin(system, total_time, dt, gamma, Temperature):
 
         AC.update(system.momentum, kinetic_energy_AC, Mode_energy)
 
-        if i % 10 == 0:
-            Corr_mom[i] = AC.momentum_correlation_at_lag(100)
+        Corr_mom[i] = AC.momentum_correlation_at_lag(100)
 
-            Corr_kin[i] = AC.kinetic_correlation_at_lag(100)
-            Corr_mode[i] = AC.mode_correlation_at_lag(100)
+        Corr_kin[i] = AC.kinetic_correlation_at_lag(100)
+        Corr_mode[i] = AC.mode_correlation_at_lag(100)
 
         # Check if thermalized
         (
